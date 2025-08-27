@@ -1,0 +1,46 @@
+# ───────── Tipos MIME ─────────
+<IfModule mod_mime.c>
+  AddType application/javascript .js .mjs
+</IfModule>
+
+# ───────── Reglas de reescritura ─────────
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # 0) Forzar HTTPS (301)
+  RewriteCond %{HTTPS} !=on
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # 1) Si alguien pide /pagina.html, redirige (301) a /pagina
+  #    (usar THE_REQUEST evita bucles y respeta enlaces internos)
+  RewriteCond %{THE_REQUEST} \s/+(.+?)\.html[\s?] [NC]
+  RewriteRule ^ %1 [R=301,L]
+
+  # 2) No reescribir si el recurso físico existe (archivos o directorios)
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # 3) Devolver 404 para recursos inexistentes dentro de /dist/js
+  RewriteCond %{REQUEST_URI} ^/dist/js/
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^ - [L,R=404]
+
+  # 4) No reescribir peticiones de JS (aunque no existan),
+  #    así evitamos que un .js inexistente caiga al index.html
+  RewriteRule \.(?:js|mjs)$ - [L,NC]
+
+  # 5) Si el usuario pide /pagina y existe /pagina.html, servirlo
+  RewriteCond %{REQUEST_FILENAME}.html -f
+  RewriteRule ^([^/.]+)/?$ $1.html [L]
+
+  # 6) Fallback del SPA: cualquier otra ruta va a index.html
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# php -- BEGIN cPanel-generated handler, do not edit
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php83___lsphp .php .php8 .phtml
+</IfModule>
+# php -- END cPanel-generated handler, do not edit
+
